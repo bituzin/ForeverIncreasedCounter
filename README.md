@@ -5,9 +5,15 @@
 
 [![Solidity 0.8.0+](https://img.shields.io/badge/Solidity-0.8.0%2B-blue.svg)](https://soliditylang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Built for Base](https://img.shields.io/badge/Built_for-Base-0052FF.svg)](https://base.org/)
-[![Built for Celo](https://img.shields.io/badge/Built_for-Celo-FBCC5C.svg)](https://celo.org/)
-[![Built for Ethereum](https://img.shields.io/badge/Built_for-Ethereum-purple.svg)](https://ethereum.org/)
+
+[![Deployed and Verified on Ethereum](https://img.shields.io/badge/Deployed_and_Verified-Ethereum-3C3C3D.svg)](https://etherscan.io/)  0x4ec0efaed26bbc559ce77a21b96443e6df9d2555
+
+[![Deployed and Verified on Base](https://img.shields.io/badge/Deployed_and_Verified-Base-0052FF.svg)](https://basescan.org/) 0x87baa848d8f1b3a472886f178e5064897d30bc4a
+
+[![Deployed and Verified on Celo](https://img.shields.io/badge/Deployed_and_Verified-Celo-FBCC5C.svg)](https://celoscan.io/) 0x68bc2d99240d335d2de59031fdde0d6d3bd5ec3e
+
+[![Deployed and Verified on Optimism](https://img.shields.io/badge/Deployed_and_Verified-Optimism-FF0420.svg)](https://optimistic.etherscan.io/) 0x95bea8cf852ceb909a310bef66c8ed5bc1768112
+
 
 ## 📖 Overview
 
