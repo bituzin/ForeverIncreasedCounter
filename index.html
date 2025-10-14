@@ -455,8 +455,7 @@
             <!-- Contract Address -->
             <div class="contract-info" style="margin-top: 0;">
                 <strong>Contract Address:</strong><br>
-                <!-- WKLEJ SWÓJ ADRES KONTRAKTU TUTAJ -->
-                <span id="contractAddress">0x1234567890abcdef1234567890abcdef12345678</span>
+                <span id="contractAddress">0x68bc2d99240d335d2de59031fdde0d6d3bd5ec3e</span>
             </div>
 
             <!-- Increase History -->
@@ -473,30 +472,12 @@
     </div>
 
     <script>
-        // ===============================
-        // KONFIGURACJA KONTRAKTU
-        // ===============================
-        
-        // WKLEJ SWÓJ ADRES KONTRAKTU TUTAJ:
-        const CONTRACT_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678";
+        // Prosty kod bez skomplikowanych funkcji
+        const CONTRACT_ADDRESS = "0x68bc2d99240d335d2de59031fdde0d6d3bd5ec3e";
+        const CELO_CHAIN_ID = "0xa4ec";
 
-        const CELO_MAINNET_PARAMS = {
-            chainId: '0xA4EC',
-            chainName: 'Celo Mainnet',
-            nativeCurrency: {
-                name: 'CELO',
-                symbol: 'CELO',
-                decimals: 18
-            },
-            rpcUrls: ['https://forno.celo.org'],
-            blockExplorerUrls: ['https://celoscan.io/']
-        };
-        
-        let web3;
         let isConnected = false;
-        let walletAddress = '';
 
-        // Elementy DOM
         const connectButton = document.getElementById('connectButton');
         const increaseButton = document.getElementById('increaseButton');
         const counterDisplay = document.getElementById('counterValue');
@@ -508,70 +489,76 @@
         const networkModal = document.getElementById('networkModal');
         const switchNetworkBtn = document.getElementById('switchNetworkBtn');
 
-        // Ustaw adres kontraktu
         contractAddressSpan.textContent = CONTRACT_ADDRESS;
 
-        // Sprawdzanie sieci
+        // Proste sprawdzanie sieci
         async function checkNetwork() {
-            if (typeof window.ethereum !== 'undefined') {
-                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-                return chainId === CELO_MAINNET_PARAMS.chainId;
+            if (window.ethereum) {
+                try {
+                    const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                    if (chainId === CELO_CHAIN_ID) {
+                        networkModal.style.display = 'none';
+                        return true;
+                    } else {
+                        networkModal.style.display = 'flex';
+                        return false;
+                    }
+                } catch (error) {
+                    console.log('Error checking network');
+                    return false;
+                }
             }
             return false;
         }
 
-        // Przełączanie sieci
+        // Proste przełączanie sieci
         async function switchToCeloNetwork() {
+            if (!window.ethereum) return;
+            
             try {
                 await window.ethereum.request({
                     method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: CELO_MAINNET_PARAMS.chainId }],
+                    params: [{ chainId: CELO_CHAIN_ID }],
                 });
-                networkModal.style.display = 'none';
-                if (!isConnected) {
-                    await connectWallet();
-                }
+                // Po przełączeniu sprawdź sieć ponownie
+                setTimeout(checkNetwork, 1000);
             } catch (switchError) {
                 if (switchError.code === 4902) {
                     try {
                         await window.ethereum.request({
                             method: 'wallet_addEthereumChain',
-                            params: [CELO_MAINNET_PARAMS],
+                            params: [{
+                                chainId: CELO_CHAIN_ID,
+                                chainName: "Celo Mainnet",
+                                nativeCurrency: { name: "CELO", symbol: "CELO", decimals: 18 },
+                                rpcUrls: ["https://forno.celo.org"],
+                                blockExplorerUrls: ["https://celoscan.io/"]
+                            }],
                         });
-                        networkModal.style.display = 'none';
-                        if (!isConnected) {
-                            await connectWallet();
-                        }
+                        setTimeout(checkNetwork, 1000);
                     } catch (addError) {
-                        console.error('Error adding Celo network:', addError);
-                        alert('Error adding Celo network. Please add it manually in your wallet.');
+                        console.log('Error adding network');
                     }
                 }
             }
         }
 
-        // Połączenie z portfelem
+        // Proste łączenie z portfelem
         async function connectWallet() {
+            if (!window.ethereum) {
+                alert('Please install a wallet like MetaMask!');
+                return;
+            }
+
+            const isCelo = await checkNetwork();
+            if (!isCelo) return;
+
             try {
-                if (typeof window.ethereum === 'undefined') {
-                    alert('Please install MetaMask or a Celo-compatible wallet!');
-                    return;
-                }
-
-                const correctNetwork = await checkNetwork();
-                if (!correctNetwork) {
-                    networkModal.style.display = 'flex';
-                    return;
-                }
-
-                // Inicjalizuj Web3
-                web3 = new Web3(window.ethereum);
-
                 const accounts = await window.ethereum.request({ 
                     method: 'eth_requestAccounts' 
                 });
                 
-                walletAddress = accounts[0];
+                const walletAddress = accounts[0];
                 isConnected = true;
 
                 connectButton.textContent = 'Disconnect';
@@ -581,56 +568,12 @@
                 statusDiv.textContent = 'Connected to Celo Mainnet';
                 statusDiv.className = 'status connected';
 
-                // Tutaj możesz dodać ładowanie danych z kontraktu
-                // await loadBlockchainData();
-
             } catch (error) {
-                console.error('Connection error:', error);
-                alert('Failed to connect wallet. Please try again.');
+                console.log('Connection failed');
             }
         }
 
-        // Zwiększ licznik
-        async function increaseCounter() {
-            if (!isConnected) {
-                alert('Please connect your wallet first');
-                return;
-            }
-
-            try {
-                const correctNetwork = await checkNetwork();
-                if (!correctNetwork) {
-                    networkModal.style.display = 'flex';
-                    return;
-                }
-
-                increaseButton.disabled = true;
-                increaseButton.textContent = 'Processing...';
-
-                // Tutaj dodaj wywołanie funkcji increase() z Twojego kontraktu
-                // Na razie symulacja
-                setTimeout(() => {
-                    const currentValue = parseInt(counterDisplay.textContent);
-                    counterDisplay.textContent = currentValue + 1;
-                    
-                    const totalValue = parseInt(totalIncreasedSpan.textContent);
-                    totalIncreasedSpan.textContent = totalValue + 1;
-
-                    increaseButton.disabled = false;
-                    increaseButton.textContent = 'Increase';
-
-                    alert('Transaction confirmed! Counter increased.');
-                }, 2000);
-
-            } catch (error) {
-                console.error('Transaction error:', error);
-                alert('Transaction failed. Please try again.');
-                increaseButton.disabled = false;
-                increaseButton.textContent = 'Increase';
-            }
-        }
-
-        // Rozłącz portfel
+        // Proste rozłączanie
         function disconnectWallet() {
             isConnected = false;
             connectButton.textContent = 'Connect Wallet';
@@ -642,7 +585,31 @@
             totalIncreasedSpan.textContent = '0';
         }
 
-        // Event Listeners
+        // Proste zwiększanie licznika
+        function increaseCounter() {
+            if (!isConnected) {
+                alert('Please connect your wallet first');
+                return;
+            }
+
+            increaseButton.disabled = true;
+            increaseButton.textContent = 'Processing...';
+
+            setTimeout(() => {
+                const currentValue = parseInt(counterDisplay.textContent);
+                counterDisplay.textContent = currentValue + 1;
+                
+                const totalValue = parseInt(totalIncreasedSpan.textContent);
+                totalIncreasedSpan.textContent = totalValue + 1;
+
+                increaseButton.disabled = false;
+                increaseButton.textContent = 'Increase';
+
+                alert('Counter increased!');
+            }, 2000);
+        }
+
+        // Proste event listeners
         connectButton.addEventListener('click', async () => {
             if (!isConnected) {
                 await connectWallet();
@@ -654,23 +621,19 @@
         increaseButton.addEventListener('click', increaseCounter);
         switchNetworkBtn.addEventListener('click', switchToCeloNetwork);
 
-        // Nasłuchiwanie zmian
-        if (typeof window.ethereum !== 'undefined') {
-            window.ethereum.on('chainChanged', () => {
-                window.location.reload();
-            });
-
-            window.ethereum.on('accountsChanged', (accounts) => {
-                if (accounts.length === 0) {
-                    disconnectWallet();
-                } else {
-                    window.location.reload();
-                }
-            });
+        // Sprawdź sieć przy starcie
+        if (window.ethereum) {
+            checkNetwork();
+            
+            // Auto-connect jeśli portfel był połączony
+            window.ethereum.request({ method: 'eth_accounts' })
+                .then(accounts => {
+                    if (accounts.length > 0) {
+                        setTimeout(connectWallet, 500);
+                    }
+                });
         }
 
     </script>
-    <!-- Web3.js -->
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
 </body>
 </html>
