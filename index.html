@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forever Increased Counter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="modal-overlay" id="networkModal">
+        <div class="modal">
+            <h3>Switch to Celo Mainnet</h3>
+            <p>This DApp only works on Celo Mainnet. Please switch your wallet network to continue.</p>
+            <button class="switch-btn" id="switchNetworkBtn">Switch Network</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="brand">
+            <div class="title">
+                Forever Increased Counter
+                <div class="celo-badge">on Celo Mainnet</div>
+            </div>
+        </div>
+        <div class="byline">by bituzin</div>
+    </div>
+
+    <div class="container">
+        <div class="left">
+            <h2>Counter</h2>
+            
+            <div class="counter-section">
+                <div>Total Increases</div>
+                <div class="counter-value" id="counterValue">0</div>
+                <div class="counter-subtitle">Since Deployment</div>
+                
+                <div class="button-container">
+                    <button id="connectButton" class="connect-btn">Connect Wallet</button>
+                    <button id="increaseButton" class="increase-btn" disabled>Increase</button>
+                </div>
+            </div>
+
+            <div class="wallet-section">
+                <h2>Wallet Status</h2>
+                <div id="status" class="status disconnected">Not Connected</div>
+                
+                <div class="wallet-row">
+                    <div class="wallet-info" id="walletInfo">
+                        <strong>Address:</strong> <span id="walletAddress"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right">
+            <div class="info-section">
+                <div class="section-header">
+                    <h2>What is Forever Increased Counter</h2>
+                    <div class="info-icon">
+                        i
+                        <div class="info-tooltip">
+                            Forever Increased Counter is a simple DApp running on the Celo blockchain that allows users to increment a counter through on-chain transactions. Each increase is permanently recorded on the blockchain, creating an immutable history of all interactions.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <div class="section-header">
+                    <h2>How to Use</h2>
+                    <div class="info-icon">
+                        i
+                        <div class="info-tooltip">
+                            <ol>
+                                <li>Click "Connect Wallet" to connect your Celo wallet</li>
+                                <li>Once connected, use the "Increase" button to increment the counter</li>
+                                <li>Your transaction will be confirmed on the Celo blockchain</li>
+                                <li>All increase transactions are recorded in the history</li>
+                                <li>You can disconnect your wallet at any time</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contract-info">
+                <strong>Contract Address:</strong><br>
+                <span id="contractAddress">0x68bc2d99240d335d2de59031fdde0d6d3bd5ec3e</span>
+                <div class="contract-network">Deployed on Celo Mainnet</div>
+            </div>
+
+            <div class="history-section">
+                <h2>Increase History</h2>
+                <div class="history-list" id="historyList">
+                    <div class="history-item">
+                        <span class="history-date">No transactions yet</span>
+                        <span class="history-address"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
