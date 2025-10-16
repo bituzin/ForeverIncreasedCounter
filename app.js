@@ -1,5 +1,7 @@
 const CONTRACT_ADDRESS = "0x68bc2d99240d335d2de59031fdde0d6d3bd5ec3e";
 const CELO_CHAIN_ID = "0xa4ec";
+const CELOSCAN_URL = "https://celoscan.io/tx/";
+const CONTRACT_CELOSCAN_URL = "https://celoscan.io/address/0x68bc2d99240d335d2de59031fdde0d6d3bd5ec3e";
 
 const CONTRACT_ABI = [
     {
@@ -23,17 +25,23 @@ const CONTRACT_ABI = [
         "type": "function"
     },
     {
-        "inputs": [],
-        "name": "counter",
-        "outputs": [
+        "anonymous": false,
+        "inputs": [
             {
+                "indexed": false,
                 "internalType": "uint256",
-                "name": "",
+                "name": "newCount",
                 "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "increasedBy",
+                "type": "address"
             }
         ],
-        "stateMutability": "view",
-        "type": "function"
+        "name": "CounterIncreased",
+        "type": "event"
     }
 ];
 
@@ -41,209 +49,110 @@ let web3;
 let contract;
 let isConnected = false;
 let walletAddress = '';
-let transactionHistory = [];
+let lastTransactionHash = '';
 
-document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
-});
+const connectButton = document.getElementById('connectButton');
+const increaseButton = document.getElementById('increaseButton');
+const counterDisplay = document.getElementById('counterValue');
+const walletInfo = document.getElementById('walletInfo');
+const walletAddressSpan = document.getElementById('walletAddress');
+const statusDiv = document.getElementById('status');
+const historyList = document.getElementById('historyList');
+const contractAddressSpan = document.getElementById('contractAddress');
+const networkModal = document.getElementById('networkModal');
+const switchNetworkBtn = document.getElementById('switchNetworkBtn');
+const lastTxLink = document.getElementById('lastTxLink');
 
-function initializeApp() {
-    const connectButton = document.getElementById('connectButton');
-    const increaseButton = document.getElementById('increaseButton');
-    const switchNetworkBtn = document.getElementById('switchNetworkBtn');
-    
-    connectButton.addEventListener('click', handleConnectClick);
-    increaseButton.addEventListener('click', handleIncreaseClick);
-    switchNetworkBtn.addEventListener('click', handleSwitchNetwork);
-    
-    document.getElementById('contractAddress').textContent = CONTRACT_ADDRESS;
-    loadHistoryFromStorage();
-    
-    if (window.ethereum) {
-        checkNetwork();
-        
-        window.ethereum.request({ method: 'eth_accounts' })
-            .then(accounts => {
-                if (accounts.length > 0) {
-                    setTimeout(() => {
-                        initContract();
-                        connectWallet();
-                    }, 500);
-                }
-            });
-    }
-}
+contractAddressSpan.textContent = CONTRACT_ADDRESS;
 
-async function handleConnectClick() {
-    if (!isConnected) {
-        await connectWallet();
-    } else {
-        disconnectWallet();
-    }
-}
+async function loadTransactionHistory() {
+    if (!contract) return;
 
-async function handleIncreaseClick() {
-    await increaseCounter();
-}
-
-async function handleSwitchNetwork() {
-    await switchToCeloNetwork();
-}
-
-function loadHistoryFromStorage() {
     try {
-        const possibleKeys = [
-            'counterHistory',
-            'foreverCounterHistory',
-            'counterTransactions', 
-            'increaseHistory',
-            'transactionHistory',
-            'allCounterHistory'
-        ];
-        
-        let allTransactions = [];
-        
-        for (const key of possibleKeys) {
-            const savedHistory = localStorage.getItem(key);
-            if (savedHistory) {
-                try {
-                    const parsed = JSON.parse(savedHistory);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        allTransactions = [...allTransactions, ...parsed];
-                    }
-                } catch (e) {
-                    console.log(`Error parsing history from ${key}:`, e);
-                }
-            }
-        }
-        
-        allTransactions.sort((a, b) => {
-            const timeA = a.timestamp || new Date(a.date).getTime() || 0;
-            const timeB = b.timestamp || new Date(b.date).getTime() || 0;
-            return timeB - timeA;
+        historyList.innerHTML = '<div class="history-item"><span class="history-date">Loading history from blockchain...</span><span class="history-address"></span></div>';
+
+        const currentBlock = await web3.eth.getBlockNumber();
+        const fromBlock = Math.max(0, currentBlock - 50000);
+
+        const events = await contract.getPastEvents('CounterIncreased', {
+            fromBlock: fromBlock,
+            toBlock: 'latest'
         });
-        
-        transactionHistory = allTransactions;
-        
-        if (transactionHistory.length > 0) {
-            saveAllHistory();
+
+        if (events.length === 0) {
+            historyList.innerHTML = '<div class="history-item"><span class="history-date">No transactions yet</span><span class="history-address"></span></div>';
+            return;
         }
-        
-        updateHistoryDisplay();
-        
+
+        displayEventsHistory(events);
+
     } catch (error) {
-        console.error('Error loading history:', error);
-        transactionHistory = [];
-        updateHistoryDisplay();
+        console.error('Error loading events:', error);
+        historyList.innerHTML = '<div class="history-item"><span class="history-date">Error loading history</span><span class="history-address"></span></div>';
     }
 }
 
-function saveAllHistory() {
-    try {
-        localStorage.setItem('allCounterHistory', JSON.stringify(transactionHistory));
-    } catch (error) {
-        console.error('Error saving history:', error);
-    }
-}
-
-function updateHistoryDisplay() {
-    const historyList = document.getElementById('historyList');
-    
-    if (transactionHistory.length === 0) {
-        historyList.innerHTML = '<div class="history-item"><span class="history-date">No transactions yet</span><span class="history-address"></span></div>';
-        return;
-    }
-    
+async function displayEventsHistory(events) {
     historyList.innerHTML = '';
-    
-    transactionHistory.forEach(item => {
-        const historyItem = document.createElement('div');
-        historyItem.className = 'history-item';
-        historyItem.innerHTML = `
-            <span class="history-date">${item.date}</span>
-            <span class="history-address">${item.address}</span>
-        `;
-        historyList.appendChild(historyItem);
-    });
-}
 
-function addToHistory(walletAddr) {
-    const now = new Date();
-    const timestamp = now.getTime();
-    const dateStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-    
-    const newTransaction = {
-        date: dateStr,
-        address: `${walletAddr.substring(0, 6)}...${walletAddr.substring(walletAddr.length - 4)}`,
-        timestamp: timestamp,
-        id: `${timestamp}-${walletAddr}-${Math.random().toString(36).substr(2, 9)}`
-    };
-    
-    const exists = transactionHistory.some(tx => 
-        tx.id === newTransaction.id || 
-        (tx.timestamp === newTransaction.timestamp && tx.address === newTransaction.address && tx.date === newTransaction.date)
-    );
-    
-    if (!exists) {
-        transactionHistory.unshift(newTransaction);
-        saveAllHistory();
-        updateHistoryDisplay();
-    }
-}
+    // Ogranicz do 10 ostatnich i odwróć kolejność (najnowsze na górze)
+    const recentEvents = events.slice(-10).reverse();
 
-function restoreOldTransactions() {
-    const backupKeys = [
-        'counterHistory',
-        'foreverCounterHistory', 
-        'counterTransactions',
-        'increaseHistory',
-        'transactionHistory'
-    ];
-    
-    let restoredCount = 0;
-    
-    backupKeys.forEach(key => {
-        const oldData = localStorage.getItem(key);
-        if (oldData) {
-            try {
-                const oldTransactions = JSON.parse(oldData);
-                if (Array.isArray(oldTransactions)) {
-                    oldTransactions.forEach(tx => {
-                        if (!tx.id) {
-                            tx.id = `old-${new Date(tx.date).getTime()}-${tx.address}-${Math.random().toString(36).substr(2, 9)}`;
-                        }
-                        const exists = transactionHistory.some(existingTx => 
-                            existingTx.id === tx.id
-                        );
-                        if (!exists) {
-                            transactionHistory.push(tx);
-                            restoredCount++;
-                        }
-                    });
-                }
-            } catch (e) {
-                console.log(`Error restoring from ${key}:`, e);
-            }
+    for (const event of recentEvents) {
+        try {
+            const block = await web3.eth.getBlock(event.blockNumber);
+            const timestamp = block.timestamp * 1000;
+            const date = new Date(timestamp).toLocaleString();
+            const sender = event.returnValues.increasedBy;
+            const count = event.returnValues.newCount;
+
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.innerHTML = `
+                <span class="history-date">${date}</span>
+                <span class="history-address">${sender.substring(0, 6)}...${sender.substring(sender.length - 4)}</span>
+            `;
+            historyList.appendChild(historyItem);
+        } catch (error) {
+            console.error('Error processing event:', error);
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.innerHTML = `
+                <span class="history-date">Block #${event.blockNumber}</span>
+                <span class="history-address">${event.returnValues.increasedBy.substring(0, 6)}...${event.returnValues.increasedBy.substring(event.returnValues.increasedBy.length - 4)}</span>
+            `;
+            historyList.appendChild(historyItem);
         }
-    });
-    
-    if (restoredCount > 0) {
-        transactionHistory.sort((a, b) => {
-            const timeA = a.timestamp || new Date(a.date).getTime() || 0;
-            const timeB = b.timestamp || new Date(b.date).getTime() || 0;
-            return timeB - timeA;
-        });
-        
-        saveAllHistory();
-        updateHistoryDisplay();
     }
-    
-    return restoredCount;
+}
+
+function listenToEvents() {
+    if (!contract) return;
+
+    contract.events.CounterIncreased({
+        fromBlock: 'latest'
+    })
+    .on('data', (event) => {
+        console.log('New counter increase detected:', event);
+        // Odśwież licznik i historię
+        loadBlockchainData();
+    })
+    .on('error', (error) => {
+        console.error('Error listening to events:', error);
+    });
+}
+
+function updateLastTxLink(txHash) {
+    if (txHash) {
+        lastTxLink.href = `${CELOSCAN_URL}${txHash}`;
+        lastTxLink.style.display = 'block';
+        lastTxLink.textContent = 'View your transaction on CeloScan';
+    } else {
+        lastTxLink.style.display = 'none';
+    }
 }
 
 async function checkNetwork() {
-    const networkModal = document.getElementById('networkModal');
-    
     if (window.ethereum) {
         try {
             const chainId = await window.ethereum.request({ method: 'eth_chainId' });
@@ -300,25 +209,20 @@ function initContract() {
     return false;
 }
 
+// POPRAWIONA FUNKCJA: Odświeża zarówno licznik jak i historię
 async function loadBlockchainData() {
     if (!contract) return;
 
     try {
-        let counterValue;
-        try {
-            counterValue = await contract.methods.getCount().call();
-        } catch (e) {
-            try {
-                counterValue = await contract.methods.counter().call();
-            } catch (e2) {
-                counterValue = 0;
-            }
-        }
+        const counterValue = await contract.methods.getCount().call();
+        counterDisplay.textContent = counterValue;
         
-        document.getElementById('counterValue').textContent = counterValue;
-
+        // ODŚWIEŻ HISTORIĘ RAZEM Z LICZNIKIEM
+        await loadTransactionHistory();
+        
     } catch (error) {
         console.error('Error loading blockchain data:', error);
+        counterDisplay.textContent = '0';
     }
 }
 
@@ -346,16 +250,15 @@ async function connectWallet() {
         walletAddress = accounts[0];
         isConnected = true;
 
-        document.getElementById('connectButton').textContent = 'Disconnect';
-        document.getElementById('increaseButton').disabled = false;
-        document.getElementById('walletAddress').textContent = `${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`;
-        document.getElementById('walletInfo').style.display = 'block';
-        
-        const statusDiv = document.getElementById('status');
+        connectButton.textContent = 'Disconnect';
+        increaseButton.disabled = false;
+        walletAddressSpan.textContent = `${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`;
+        walletInfo.style.display = 'block';
         statusDiv.textContent = 'Connected to Celo Mainnet';
         statusDiv.className = 'status connected';
 
         await loadBlockchainData();
+        listenToEvents();
 
     } catch (error) {
         console.error('Connection error:', error);
@@ -375,27 +278,23 @@ async function increaseCounter() {
             return;
         }
 
-        const increaseButton = document.getElementById('increaseButton');
         increaseButton.disabled = true;
         increaseButton.textContent = 'Processing...';
+        lastTxLink.style.display = 'none';
 
         const accounts = await web3.eth.getAccounts();
         
-        try {
-            await contract.methods.increment().send({ from: accounts[0] });
-        } catch (e) {
-            try {
-                await contract.methods.increase().send({ from: accounts[0] });
-            } catch (e2) {
-                alert('Error: Contract function not found. Check ABI.');
-                increaseButton.disabled = false;
-                increaseButton.textContent = 'Increase';
-                return;
-            }
-        }
-
+        // Wyślij transakcję i poczekaj na potwierdzenie
+        const transaction = await contract.methods.increment().send({ from: accounts[0] });
+        
+        // Zapisz hash transakcji
+        lastTransactionHash = transaction.transactionHash;
+        
+        // Odśwież licznik i historię natychmiast
         await loadBlockchainData();
-        addToHistory(walletAddress);
+        
+        // Pokaż link do transakcji
+        updateLastTxLink(lastTransactionHash);
 
         increaseButton.disabled = false;
         increaseButton.textContent = 'Increase';
@@ -405,27 +304,45 @@ async function increaseCounter() {
     } catch (error) {
         console.error('Transaction error:', error);
         alert('Transaction failed: ' + error.message);
-        
-        const increaseButton = document.getElementById('increaseButton');
         increaseButton.disabled = false;
         increaseButton.textContent = 'Increase';
+        lastTxLink.style.display = 'none';
     }
 }
 
 function disconnectWallet() {
     isConnected = false;
-    
-    document.getElementById('connectButton').textContent = 'Connect Wallet';
-    document.getElementById('increaseButton').disabled = true;
-    document.getElementById('walletInfo').style.display = 'none';
-    
-    const statusDiv = document.getElementById('status');
+    connectButton.textContent = 'Connect Wallet';
+    increaseButton.disabled = true;
+    walletInfo.style.display = 'none';
     statusDiv.textContent = 'Not Connected';
     statusDiv.className = 'status disconnected';
-    
-    document.getElementById('counterValue').textContent = '0';
+    counterDisplay.textContent = '0';
+    historyList.innerHTML = '<div class="history-item"><span class="history-date">No transactions yet</span><span class="history-address"></span></div>';
+    lastTxLink.style.display = 'none';
 }
 
-setTimeout(() => {
-    restoreOldTransactions();
-}, 1000);
+connectButton.addEventListener('click', async () => {
+    if (!isConnected) {
+        await connectWallet();
+    } else {
+        disconnectWallet();
+    }
+});
+
+increaseButton.addEventListener('click', increaseCounter);
+switchNetworkBtn.addEventListener('click', switchToCeloNetwork);
+
+if (window.ethereum) {
+    checkNetwork();
+    
+    window.ethereum.request({ method: 'eth_accounts' })
+        .then(accounts => {
+            if (accounts.length > 0) {
+                setTimeout(() => {
+                    initContract();
+                    connectWallet();
+                }, 500);
+            }
+        });
+}
