@@ -33,20 +33,23 @@
             <div class="counter-section">
                 <div>Total Increases</div>
                 <div class="counter-value" id="counterValue">0</div>
-                <div class="counter-subtitle">Since Deployment</div>
+                <div style="font-size: 12px; color: var(--muted);">Since Deployment</div>
                 
                 <div class="button-container">
                     <button id="connectButton" class="connect-btn">Connect Wallet</button>
                     <button id="increaseButton" class="increase-btn" disabled>Increase</button>
                 </div>
+                
+                <!-- Link do ostatniej transakcji -->
+                <a href="#" id="lastTxLink" class="tx-link" style="display: none;" target="_blank">View your transaction on CeloScan</a>
             </div>
 
-            <div class="wallet-section">
+            <div style="margin-top: 24px;">
                 <h2>Wallet Status</h2>
                 <div id="status" class="status disconnected">Not Connected</div>
                 
                 <div class="wallet-row">
-                    <div class="wallet-info" id="walletInfo">
+                    <div class="wallet-info" id="walletInfo" style="display: none;">
                         <strong>Address:</strong> <span id="walletAddress"></span>
                     </div>
                 </div>
@@ -56,7 +59,7 @@
         <div class="right">
             <div class="info-section">
                 <div class="section-header">
-                    <h2>What is Forever Increased Counter</h2>
+                    <h2 style="margin: 0;">What is Forever Increased Counter</h2>
                     <div class="info-icon">
                         i
                         <div class="info-tooltip">
@@ -68,11 +71,11 @@
 
             <div class="info-section">
                 <div class="section-header">
-                    <h2>How to Use</h2>
+                    <h2 style="margin: 0;">How to Use</h2>
                     <div class="info-icon">
                         i
                         <div class="info-tooltip">
-                            <ol>
+                            <ol style="padding-left: 16px; margin: 0;">
                                 <li>Click "Connect Wallet" to connect your Celo wallet</li>
                                 <li>Once connected, use the "Increase" button to increment the counter</li>
                                 <li>Your transaction will be confirmed on the Celo blockchain</li>
@@ -84,20 +87,27 @@
                 </div>
             </div>
 
-            <div class="contract-info">
+            <div class="contract-info" style="margin-top: 0;">
                 <strong>Contract Address:</strong><br>
                 <span id="contractAddress">0x68bc2d99240d335d2de59031fdde0d6d3bd5ec3e</span>
-                <div class="contract-network">Deployed on Celo Mainnet</div>
+                <div style="margin-top: 8px; font-size: 11px; color: var(--muted); font-weight: 600;">
+                    Deployed on Celo Mainnet
+                </div>
             </div>
 
-            <div class="history-section">
-                <h2>Increase History</h2>
+            <div style="margin-top: 24px;">
+                <div class="history-header">
+                    <h2 style="margin: 0;">Increase History</h2>
+                    <span style="font-size: 12px; color: var(--muted); font-weight: 600;">(last 10)</span>
+                </div>
                 <div class="history-list" id="historyList">
                     <div class="history-item">
                         <span class="history-date">No transactions yet</span>
                         <span class="history-address"></span>
                     </div>
                 </div>
+                <!-- Link do wszystkich transakcji -->
+                <a href="https://celoscan.io/address/0x68bc2d99240d335d2de59031fdde0d6d3bd5ec3e" class="view-all-link" target="_blank">View all transactions</a>
             </div>
         </div>
     </div>
