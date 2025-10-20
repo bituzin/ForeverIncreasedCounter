@@ -30,7 +30,7 @@ ForeverCounter is an extremely simple yet powerful smart contract that implement
 - **❌ No Parameters** - Fixed +1 increment, no arbitrary values
 - **🔒 Immutable** - Once deployed, behavior cannot be changed
 
-✅ 20/10.2025 Update: Added Time Tracking Features (foreverIncreasedCounter v0.2.sol)
+✅ 20/10.2025 Update: Added Time Tracking Features (ForeverIncreasedCounter v0.2.sol)
 
 lastIncrementTime (public variable) Purpose: Tracks the exact timestamp of the last counter increment Returns: Unix timestamp (uint256) of when the counter was last increased Usage: Directly accessible public variable showing when the last interaction occurred
 
