@@ -3,6 +3,8 @@
 
 **Working DApp** **https://bituzin.github.io/ForeverIncreasedCounter**
 
+**https://forever-increased-counter.vercel.app**
+
 **Simple, Immutable, Ever-Increasing Counter Smart Contract**
 
 [![Solidity 0.8.0+](https://img.shields.io/badge/Solidity-0.8.0%2B-blue.svg)](https://soliditylang.org/)
